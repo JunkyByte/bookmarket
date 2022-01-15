@@ -8,7 +8,7 @@ import time
 Q = Query()
 
 
-@enforce_types
+# @enforce_types  # TODO: Wrap manually before writing if you want
 @dataclass(frozen=True)
 class Record:
     url: Optional[str] = None
@@ -18,6 +18,9 @@ class Record:
 
     def query_dict(self):
         return {x: k for x, k in asdict(self).items() if k is not None}
+    
+    def human_ts(self):
+        return datetime.fromtimestamp(self.ts).strftime('%Y-%m-%d %H:%M:%S')
 
 
 # typing utility objects
@@ -106,20 +109,11 @@ class Bookmarket:
         """
         return bool(self.db.update(record.query_dict(), Q.url == record.url))
 
-    def all(self) -> List:
-        return self.db.all()
+    def all(self) -> List[Record]:
+        return [Record(**r) for r in self.db.all()]
     
     def truncate(self):
         self.db.truncate()
 
     def close(self):
         self.db.close()
-
-
-if __name__ == '__main__':
-    db = Bookmarket('/tmp/test_db.json')
-    db.truncate()
-
-    r = Record(url='https://www.google.com', title='just google', info='A bookmark', ts=time.time())
-
-    print(r)
