@@ -9,18 +9,22 @@ Q = Query()
 
 
 # @enforce_types  # TODO: Wrap manually before writing if you want
-@dataclass(frozen=True)
+@dataclass(frozen=True, order=True)
 class Record:
-    url: Optional[str] = None
-    title: Optional[str] = None
-    info: Optional[str] = None
-    ts: Optional[float] = None
+    url: Optional[str] = field(default=None, compare=False)
+    title: Optional[str] = field(default=None, compare=False)
+    info: Optional[str] = field(default=None, compare=False)
+    ts: Optional[float] = field(default=None, compare=True)
 
     def query_dict(self):
         return {x: k for x, k in asdict(self).items() if k is not None}
     
+    # TODO: Might be a property
     def human_ts(self):
-        return datetime.fromtimestamp(self.ts).strftime('%Y-%m-%d %H:%M:%S')
+        try:
+            return datetime.fromtimestamp(self.ts).strftime('%Y-%m-%d %H:%M:%S')
+        except TypeError:
+            return None
 
 
 # typing utility objects
@@ -36,6 +40,9 @@ class Bookmarket:
     """
     def __init__(self, db_path):
         self.db = TinyDB(db_path)
+
+    def __len__(self):
+        return len(self.db)
 
     def write(self, record: Records) -> List:
         """
@@ -54,6 +61,7 @@ class Bookmarket:
                 r = replace(r, ts=time.time())
             elif isinstance(r.ts, datetime):
                 r = replace(r, ts=datetime.timestamp(r.ts))
+            print(r, r.__dict__, type(r), [type(v) for v in r.__dict__.values()])
             res.append(self.db.insert(asdict(r)))
         return res
 
