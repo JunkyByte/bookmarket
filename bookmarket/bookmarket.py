@@ -18,8 +18,8 @@ class Record:
 
     def query_dict(self):
         return {x: k for x, k in asdict(self).items() if k is not None}
-    
-    # TODO: Might be a property
+
+    @property
     def human_ts(self):
         try:
             return datetime.fromtimestamp(self.ts).strftime('%Y-%m-%d %H:%M:%S')
@@ -61,18 +61,14 @@ class Bookmarket:
                 r = replace(r, ts=time.time())
             elif isinstance(r.ts, datetime):
                 r = replace(r, ts=datetime.timestamp(r.ts))
-            print(r, r.__dict__, type(r), [type(v) for v in r.__dict__.values()])
             res.append(self.db.insert(asdict(r)))
         return res
 
     def search(self, q) -> Optional[List[Record]]:
         """
         Utility function to have search queries return Record objects
-        Returns None if the query does not match anything
         """
         results = self.db.search(q)
-        if not results:
-            return None
         return [Record(**r) for r in results]
 
     def get(self, q) -> Optional[Record]:
@@ -119,7 +115,7 @@ class Bookmarket:
 
     def all(self) -> List[Record]:
         return [Record(**r) for r in self.db.all()]
-    
+
     def truncate(self):
         self.db.truncate()
 

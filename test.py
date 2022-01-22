@@ -43,11 +43,11 @@ class TestDB(unittest.TestCase):
         qs.append(Record(info='not found infos'))
         qs.append(Record(ts=t0))  # Found is r_og
         qs.append(Record(ts=time.time()))  # Not found
-        exp_res = [r_og, None, r_og2, None, r_og2, None, r_og, None]
+        exp_res = [r_og, [], r_og2, [], r_og2, [], r_og, []]
 
         for i, q in enumerate(qs):
             res = self.bm.smatch(q)
-            if exp_res[i] is not None:
+            if exp_res[i]:
                 res = res[0]
             self.assertEqual(res, exp_res[i])
 
@@ -72,7 +72,7 @@ class TestDB(unittest.TestCase):
         qs.append([datetime(2014, 1, 1), datetime(2020, 1, 1)])
         qs.append([datetime(2020, 1, 1), None])
         qs.append([None, datetime(2010, 1, 1)])
-        exp_res = [[r2012], [r2018], [r2012, r2015], [r2015, r2018], None, None]
+        exp_res = [[r2012], [r2018], [r2012, r2015], [r2015, r2018], [], []]
 
         for i, (t0, t1) in enumerate(qs):
             res = self.bm.stime(t0, t1)
