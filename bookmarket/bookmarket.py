@@ -94,7 +94,9 @@ class Bookmarket:
                 r = replace(r, ts=time.time())
             elif isinstance(r.ts, datetime):
                 r = replace(r, ts=datetime.timestamp(r.ts))
-            res.append(self.db.insert(asdict(r)))
+
+            with transaction(self.db) as tr:
+                res.append(tr.insert(asdict(r)))
         return res
 
     def update_all(self) -> None:
@@ -176,7 +178,8 @@ class Bookmarket:
         return [Record(**r) for r in self.db.all()]
 
     def truncate(self):
-        self.db.truncate()
+        with transaction(self.db) as tr:
+            tr.truncate()
 
     def close(self):
         self.db.close()
