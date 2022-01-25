@@ -4,8 +4,14 @@ from datetime import datetime
 from enforce_typing import enforce_types  # type: ignore
 from typing import Optional, Sequence, Union, List
 from datetime import datetime
+from bs4 import BeautifulSoup
+from tinyrecord import transaction
+import requests
+import socket
 import time
 Q = Query()
+session = requests.Session()
+session.max_redirects = 3
 
 
 # @enforce_types  # TODO: Wrap manually before writing if you want
@@ -30,6 +36,33 @@ class Record:
 # typing utility objects
 Records = Union[Record, Sequence[Record]]
 OptTimeType = Optional[Union[float, datetime]]
+
+
+def find_infos(url):
+    try:
+        req = session.get(url, timeout=3, headers={'User-Agent': 'Magic Browser'})
+    except (requests.Timeout, requests.HTTPError, requests.ConnectionError):
+        return None, None
+
+    soup = BeautifulSoup(req.content.decode('utf-8', 'ignore'), features='lxml')
+    try:  # Try to get a title
+        title = str(soup.title.string)
+    except AttributeError:
+        return None, None
+
+    try:  # Try to get a description
+        info = soup.find('meta', property='og:description')['content']
+    except TypeError:
+        info = None
+
+    return title, info
+
+def sanitize_url(url):
+    if url.endswith('.pdf'):
+        url = url[:url.rfind('.pdf')]
+        if 'arxiv.org' in url:
+            url = url.replace('pdf', 'abs')
+    return url
 
 
 class Bookmarket:
@@ -64,6 +97,24 @@ class Bookmarket:
             res.append(self.db.insert(asdict(r)))
         return res
 
+    def update_all(self) -> None:
+        """
+        Update all records title and infos to the one you get from webscraping the site source
+        """
+        total = len(self)
+        total_size = len(str(total))
+        for ith, r in enumerate(self.all()):  # This is inefficient but it's fine
+            url = sanitize_url(r.url)
+            print(f'{ith:{total_size}}/{total} {url}')
+            title, info = find_infos(url)
+            r_up = replace(r, url=url, title=title, info=info)
+            if url != r.url:
+                self.delete(r)
+                self.write(r_up)
+            else:
+                self.update(r_up)
+        return None
+
     def search(self, q) -> Optional[List[Record]]:
         """
         Utility function to have search queries return Record objects
@@ -80,6 +131,13 @@ class Bookmarket:
         if result is None:
             return None
         return Record(**result)
+    
+    def delete(self, record: Record) -> None:
+        """
+        Delete a record
+        """
+        with transaction(self.db) as tr:
+            return tr.remove(Q.url == record.url)
 
     def smatch(self, record: Record) -> Optional[List[Record]]:
         """
@@ -111,7 +169,8 @@ class Bookmarket:
         Update entry that matches the record url passed.
         Will only update record initialized fields.
         """
-        return bool(self.db.update(record.query_dict(), Q.url == record.url))
+        with transaction(self.db) as tr:
+            return bool(tr.update(record.query_dict(), Q.url == record.url))
 
     def all(self) -> List[Record]:
         return [Record(**r) for r in self.db.all()]
