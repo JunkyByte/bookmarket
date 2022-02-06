@@ -8,6 +8,7 @@ from bookmarket.bookmarket import Bookmarket, Record
 class TestDB(unittest.TestCase):
     def setUp(self):
         self.bm = Bookmarket('/tmp/bookmarket_db_test.py')
+        self.bm.truncate()
 
     def tearDown(self):
         self.bm.truncate()
@@ -15,8 +16,8 @@ class TestDB(unittest.TestCase):
 
     def test_write(self):
         r = Record(url='https://www.google.com', title='just google', info='A bookmark', ts=time.time())
-        r_id = self.bm.write(r)
-        self.assertEqual(self.bm.db.get(doc_id=r_id[0]), asdict(r))
+        self.bm.write(r)
+        self.assertEqual(asdict(self.bm.smatch(r)[0]), asdict(r))
 
         try:  # TODO This might not be the correct place to check this works correctly.
             r2 = Record(url='https://www.new.com', title='just google', info='A bookmark', ts=None)
@@ -97,7 +98,7 @@ class TestDB(unittest.TestCase):
         r = Record(url='https://www.google.com', title=title0, info=info0, ts=ts0)
         self.bm.write(r)
         r_up = Record(url='https://www.google.com', title=title1)
-        self.assertTrue(self.bm.update(r_up))
+        self.bm.update(r_up)
         res = self.bm.get(Q.url == r_up.url)
         self.assertEqual(r.ts, res.ts)
         self.assertEqual(r.info, res.info)
@@ -107,7 +108,7 @@ class TestDB(unittest.TestCase):
         r = Record(url='https://www.google.com', title=title0, info=info0, ts=ts0)
         self.bm.write(r)
         r_up = Record(url='https://www.google.com', info=info1)
-        self.assertTrue(self.bm.update(r_up))
+        self.bm.update(r_up)
         res = self.bm.get(Q.url == r_up.url)
         self.assertEqual(r.ts, res.ts)
         self.assertEqual(r.title, res.title)
@@ -117,7 +118,7 @@ class TestDB(unittest.TestCase):
         r = Record(url='https://www.google.com', title=title0, info=info0, ts=ts0)
         self.bm.write(r)
         r_up = Record(url='https://www.google.com', title=title1, info=info1)
-        self.assertTrue(self.bm.update(r_up))
+        self.bm.update(r_up)
         res = self.bm.get(Q.url == r_up.url)
         self.assertEqual(r.ts, res.ts)
         self.assertEqual(r_up.title, res.title)
@@ -127,7 +128,7 @@ class TestDB(unittest.TestCase):
         r = Record(url='https://www.google.com', title=title0, info=info0, ts=ts0)
         self.bm.write(r)
         r_up = Record(url='https://www.google.com', title=title1, info=info1, ts=ts1)
-        self.assertTrue(self.bm.update(r_up))
+        self.bm.update(r_up)
         res = self.bm.get(Q.url == r_up.url)
         self.assertEqual(r_up.ts, res.ts)
         self.assertEqual(r_up.title, res.title)

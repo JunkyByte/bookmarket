@@ -1,9 +1,0 @@
-origin: 'local'
-origin_path: '~/Documents/bookmarket/'
-dest: 'pi@192.168.0.108'
-dest_path: '/home/pi/bookmarket/'
-mirror: false
-pattern: '*'
-ignore_pattern: '.git/'
-origin_jump: null
-dest_jump: null

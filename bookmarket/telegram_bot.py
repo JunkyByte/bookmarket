@@ -2,6 +2,7 @@ import logging
 import time
 import socket
 import telegram
+import timestring
 from bs4 import BeautifulSoup
 from telegram.ext import (
         Updater, CommandHandler, CallbackContext, MessageHandler, Filters,
@@ -37,10 +38,16 @@ def handle_msg(update: Update, context: CallbackContext) -> None:
         update.message.reply_text('Something went wrong')
         return None
     cmd = msg.lower().split()[0]
+
+    if cmd in ['st', 'at', 'searchtime']:
+        search_time(update, context)
+        return None
+
     if cmd in ['s', 'a', 'search']:
         search(update, context)
         return None
-    elif cmd in ['d', 'delete']:
+
+    if cmd in ['d', 'delete']:
         delete(update, context)
         return None
 
@@ -70,6 +77,38 @@ def delete(update: Update, context: CallbackContext) -> None:
         reply_markup = InlineKeyboardMarkup.from_column(keyboard)
         update.message.reply_text(preview_record(r), reply_markup=reply_markup,
                                   parse_mode=telegram.ParseMode.HTML, disable_web_page_preview=True)
+    return None
+
+
+def search_time(update: Update, context: CallbackContext) -> None:
+    msg = ' '.join(update['message']['text'].split()[1:])
+    try:
+        rg = timestring.Range(msg)
+        print(rg.start, rg.end)
+    except timestring.TimestringInvalid:
+        update.message.reply_text('Could not parse the time!')
+        return None
+
+    rs = bm.stime(rg.start.to_unixtime(), rg.end.to_unixtime())
+    if rs:
+        msg_records(update, rs)
+    else:
+        update.message.reply_text('Did not find a single thing!')
+    return None
+
+
+def search(update: Update, context: CallbackContext) -> None:
+    msg = set(update['message']['text'].split()[1:])
+    msg = [m for m in msg if m != ' ']
+
+    rs = set(bm.search(Q.title.test(any_in, *msg)))
+    rs.update(bm.search(Q.url.test(any_in, *msg)))
+    rs.update(bm.search(Q.info.test(any_in, *msg)))
+
+    if rs:
+        msg_records(update, rs)
+    else:
+        update.message.reply_text('Did not find a single thing!')
     return None
 
 
@@ -137,7 +176,9 @@ def handle_callback(update: Update, context: CallbackContext) -> None:
         add_callback(update, context)
     if cmd == 'delete':
         delete_callback(update, context)
-    
+    if cmd == 'update':
+        update_callback(update, context)
+
     return None
 
 
@@ -195,7 +236,19 @@ def show_preview(update: Update, context: CallbackContext) -> None:  # TODO
     return None if not rs else msg_records(update, rs)
 
 
-def update_all(update: Update, context: CallbackContext) -> None:
+def update_confirm(update: Update, context: CallbackContext) -> None:
+    keyboard = [
+        InlineKeyboardButton("You sure?", callback_data=('update', None)),
+        InlineKeyboardButton("Cancel", callback_data='cancel'),
+    ]
+
+    reply_markup = InlineKeyboardMarkup.from_column(keyboard)
+    update.message.reply_text('Are you sure you want to update all entries? Will take a while',
+                              reply_markup=reply_markup, parse_mode=telegram.ParseMode.HTML,
+                              disable_web_page_preview=True)
+    return None
+
+def update_callback(update: Update, context: CallbackContext):
     update.message.reply_text(text='Updating all entries 👍 give me some slack')
     bm.update_all()
     update.message.reply_text(text='Finished updating the entries 👍')
@@ -209,9 +262,6 @@ def handle_invalid_button(update: Update, context: CallbackContext) -> None:
         'Sorry, I could not process this button click'
     )
 
-
-def is_search(s):
-    return s.lower[0] == 's'
 
 
 def main() -> None:
@@ -229,7 +279,7 @@ def main() -> None:
     dispatcher.add_handler(CommandHandler("start", start))
     dispatcher.add_handler(CommandHandler("help", start))  # TODO
     dispatcher.add_handler(CommandHandler("p", show_preview))
-    dispatcher.add_handler(CommandHandler("updateall", update_all))
+    dispatcher.add_handler(CommandHandler("updateall", update_confirm))
 
     # Callback with menu
     dispatcher.add_handler(MessageHandler(Filters.text, handle_msg))

@@ -1,9 +1,0 @@
-origin: 'local'
-origin_path: '~/Documents/bookmarket/'
-dest: '35.231.119.165'
-dest_path: '/home/adryw/bookmarket/'
-mirror: false
-pattern: '*'
-ignore_pattern: '.git/'
-origin_jump: null
-dest_jump: null

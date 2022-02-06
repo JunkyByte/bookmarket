@@ -166,20 +166,20 @@ class Bookmarket:
 
         return self.search((Q.ts >= start) & (Q.ts < end))
 
-    def update(self, record: Record) -> bool:
+    def update(self, record: Record):
         """
         Update entry that matches the record url passed.
         Will only update record initialized fields.
         """
         with transaction(self.db) as tr:
-            return bool(tr.update(record.query_dict(), Q.url == record.url))
+            tr.update(record.query_dict(), Q.url == record.url)
+        return None
 
     def all(self) -> List[Record]:
         return [Record(**r) for r in self.db.all()]
 
     def truncate(self):
-        with transaction(self.db) as tr:
-            tr.truncate()
+        self.db.truncate()
 
     def close(self):
         self.db.close()
