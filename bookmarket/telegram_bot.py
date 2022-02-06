@@ -84,7 +84,6 @@ def search_time(update: Update, context: CallbackContext) -> None:
     msg = ' '.join(update['message']['text'].split()[1:])
     try:
         rg = timestring.Range(msg)
-        print(rg.start, rg.end)
     except timestring.TimestringInvalid:
         update.message.reply_text('Could not parse the time!')
         return None
