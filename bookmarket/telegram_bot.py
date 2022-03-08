@@ -128,6 +128,7 @@ def search(update: Update, context: CallbackContext) -> None:
 def add(update: Update, context: CallbackContext) -> None:
     msg = update['message']['text'].split()
     url = msg.pop(0)
+    url = sanitize_url(url)
 
     try:  # I mean this is slow, 2 full reqs for no reason TODO
         req = session.get(url, headers={'User-Agent': 'Magic Browser'})
