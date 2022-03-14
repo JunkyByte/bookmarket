@@ -130,3 +130,4 @@ dmypy.json
 data/
 iris_config.yaml
 iris_config2.yaml
+bookmarket/bot.key

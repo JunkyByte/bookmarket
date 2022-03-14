@@ -1,4 +1,6 @@
 import logging
+import sys
+import os
 import time
 import socket
 import telegram
@@ -265,8 +267,18 @@ def handle_invalid_button(update: Update, context: CallbackContext) -> None:
 
 
 def main() -> None:
-    """Run bot."""
-    updater = Updater("5010426285:AAE4oP-k9dB1eeR2nyBHBgiEHnXi-8Wn8FM", arbitrary_callback_data=True)
+    # Check key file
+    key_file = 'bookmarket/bot.key'
+    if not os.path.isfile(key_file):
+        print('telegram bot key file does not exist and will be created as ./bookmarket/bot.key')
+        print('Please paste your telegram token in it')
+        open(key_file, 'a').close()
+        sys.exit()
+
+    # Start the bot
+    with open(key_file, 'r') as f:
+        key = f.read().replace('\n', '')
+    updater = Updater(key, arbitrary_callback_data=True)
     updater.bot.set_my_commands([
         ('/p', 'preview'),  # TODO
         ('/updateall', 'update all entries')
