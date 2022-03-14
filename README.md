@@ -12,8 +12,29 @@ The `Bookmarket` features are:
 - you can search timewise, by Query (see `TinyDB` queries) or by fragment of a Record
 
 In its current state the telegram bot allows you to add and delete bookmarks by link and to search by keywords or time.
-Simply share a link and the bot will prompt you a confirm checkbox.
-You can search by keywords using any of the following `[search, s, a] <keywords>`
-Or search by time using `[seachtime, st, at] <time>` the time is parsed using `timestring` library which neatly parses *informal*
-timestamps (e.g. `searchtime since last week`)
-To delete a url just use `[delete, d] url`
+Simply share a link and the bot will prompt you a confirmation checkbox.
+
+```
+Commands: (each value in the square bracket is equivalent)
+Search by keywords: [search, s, a] <keywords>
+Search by time with: [seachtime, st, at] <time>
+note: the time is parsed using the `timestring` python library which neatly parses "informal"
+timestamps (e.g. 'searchtime since last week' works just fine)
+Delete a url with `[delete, d] url`
+```
+
+## Setup
+
+An informal list of requirements can be found in `requirements.txt`.
+
+To install and serve through telegram first create a new bot using `@BotFather` then clone and run with:
+```
+git clone git@github.com:JunkyByte/bookmarket.git
+cd bookmarket
+python bookmarket/telegram_bot.py
+```
+It will create a key file where you can paste your access token.
+
+----
+
+`Bookmarket` is a personal project, no complete coverage nor thorough unit testing has been done, use it at your own risk, we do not take any responsability for its behaviour.
