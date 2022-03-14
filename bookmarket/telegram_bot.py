@@ -17,7 +17,7 @@ import requests
 from requests.exceptions import InvalidURL, MissingSchema, InvalidSchema
 from tinydb import Query
 Q = Query()
-bm = Bookmarket('./data/test_db.json')
+bm = Bookmarket('./data/db.json')
 session = requests.Session()
 session.max_redirects = 3
 

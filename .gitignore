@@ -127,7 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-data/
+*.json
 iris_config.yaml
 iris_config2.yaml
 bookmarket/bot.key
