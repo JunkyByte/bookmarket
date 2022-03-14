@@ -1,5 +1,7 @@
 # bookmarket
 
+![this should be an image](https://i.ibb.co/vLHTSD7/image.png)
+
 Bookmarket is a tiny project written completely in python to self host a bookmark manager that's browser and device agnostic.
 The `Bookmarket` class manages the interactions with a `TinyDB` database to store your bookmarks, you can interact with the database
 through telegram with the already implemented bot or write your own communication system.
