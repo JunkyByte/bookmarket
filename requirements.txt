@@ -1,0 +1,6 @@
+timestring==1.6.4
+dataclasses==0.6
+tinyrecord==0.2.0
+enforce_typing==1.0.0.post1
+beautifulsoup4==4.10.0
+python-telegram-bot
