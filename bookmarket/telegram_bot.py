@@ -11,6 +11,7 @@ from telegram.ext import (
         CallbackQueryHandler, InvalidCallbackData
 )
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from datetime import datetime, timedelta
 from bookmarket import Bookmarket, Record, find_infos, sanitize_url
 from dataclasses import replace
 import requests
@@ -238,6 +239,22 @@ def show_preview(update: Update, context: CallbackContext) -> None:  # TODO
     return None if not rs else msg_records(update, rs)
 
 
+def show_stats(update: Update, context: CallbackContext) -> None:
+    # Show total bookmarks, added today / week / month / year
+    msg = '<b>Bookmarket stats</b> 📊\n'
+    msg += f'Total bookmarks: <b>{len(bm)}</b>\n'
+    today = datetime.now() - timedelta(days=1)
+    msg += f'Added today: <b>{len(bm.stime(start=today))}</b>\n'
+    week = datetime.now() - timedelta(weeks=1)
+    msg += f'Added this week: <b>{len(bm.stime(start=week))}</b>\n'
+    month = datetime.now() - timedelta(days=30)
+    msg += f'Added this month: <b>{len(bm.stime(start=month))}</b>\n'
+    year = datetime.now() - timedelta(days=365)
+    msg += f'Added this year: <b>{len(bm.stime(start=year))}</b>\n'
+    update.message.reply_text(text=msg, parse_mode=telegram.ParseMode.HTML,
+                              disable_web_page_preview=False)
+
+
 def update_confirm(update: Update, context: CallbackContext) -> None:
     keyboard = [
         InlineKeyboardButton("You sure?", callback_data=('update', None)),
@@ -280,7 +297,8 @@ def main() -> None:
         key = f.read().replace('\n', '')
     updater = Updater(key, arbitrary_callback_data=True)
     updater.bot.set_my_commands([
-        ('/p', 'preview'),  # TODO
+        ('/p', 'preview last few added bookmarks'),  # TODO
+        ('/stats', 'show stats'),
         ('/updateall', 'update all entries')
     ])
 
@@ -291,6 +309,7 @@ def main() -> None:
     dispatcher.add_handler(CommandHandler("start", start))
     dispatcher.add_handler(CommandHandler("help", start))  # TODO
     dispatcher.add_handler(CommandHandler("p", show_preview))
+    dispatcher.add_handler(CommandHandler("stats", show_stats))
     dispatcher.add_handler(CommandHandler("updateall", update_confirm))
 
     # Callback with menu
