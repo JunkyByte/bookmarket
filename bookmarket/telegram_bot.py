@@ -10,7 +10,7 @@ from telegram.ext import (
         Updater, CommandHandler, CallbackContext, MessageHandler, Filters,
         CallbackQueryHandler, InvalidCallbackData
 )
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, ReplyKeyboardMarkup
 from datetime import datetime, timedelta
 from bookmarket import Bookmarket, Record, find_infos, sanitize_url
 from dataclasses import replace
@@ -50,11 +50,7 @@ def handle_msg(update: Update, context: CallbackContext) -> None:
         search(update, context)
         return None
 
-    if cmd in ['d', 'delete']:
-        delete(update, context)
-        return None
-
-    add(update, context)
+    add_or_delete(update, context)
     return None
 
 
@@ -62,26 +58,6 @@ def any_in(field, *patterns):
     if field is None:
         return False
     return all(p.lower() in field.lower() for p in patterns)
-
-
-def delete(update: Update, context: CallbackContext) -> None:
-    msg = set(update['message']['text'].split()[1:])
-    for m in msg:
-        r = bm.get(Q.url == m)
-        if r is None:
-            update.message.reply_text('The url does not exists! 🙃')
-            continue
-
-        keyboard = [
-            InlineKeyboardButton("Delete", callback_data=('delete', r)),
-            InlineKeyboardButton("Cancel", callback_data='cancel'),
-        ]
-
-        reply_markup = InlineKeyboardMarkup.from_column(keyboard)
-        update.message.reply_text(preview_record(r), reply_markup=reply_markup,
-                                  parse_mode=telegram.ParseMode.HTML, disable_web_page_preview=True)
-    return None
-
 
 def search_time(update: Update, context: CallbackContext) -> None:
     msg = ' '.join(update['message']['text'].split()[1:])
@@ -128,40 +104,57 @@ def search(update: Update, context: CallbackContext) -> None:
         update.message.reply_text('Did not find a single thing!')
     return None
 
-def add(update: Update, context: CallbackContext) -> None:
+
+def add_or_delete(update: Update, context: CallbackContext) -> None:
     msg = update['message']['text'].split()
     url = msg.pop(0)
     url = sanitize_url(url)
+    title, info = None, None
 
-    try:  # I mean this is slow, 2 full reqs for no reason TODO
-        req = session.get(url, headers={'User-Agent': 'Magic Browser'})
-    except (InvalidURL, MissingSchema, InvalidSchema, requests.Timeout,
-            requests.HTTPError, requests.ConnectionError):
-        update.message.reply_text('Could not open the link you passed')
-        return None, None
+    # First decide if we want to add or delete
+    action_name = 'Delete'
+    premsg = 'This url already exists, do you want to delete it? 🤔\n'
+    action = 'delete'
+    r = bm.get(Q.url == url)
+    if r is None:
+        action_name = 'Add'
+        action = 'add'
+        premsg = 'This url does not exist, want to add it? 🤔\n'
+        try:  # I mean this is slow, 2 full reqs for no reason TODO
+            req = session.get(url, headers={'User-Agent': 'Magic Browser'})
+        except (InvalidURL, MissingSchema, InvalidSchema, requests.Timeout,
+                requests.HTTPError, requests.ConnectionError):
+            update.message.reply_text('Could not open the link you passed')
+            return None, None
 
-    info = ' '.join(msg) if msg else ''
-    title, info2 = find_infos(url)
-    if info2 is not None:
-        info += ' ' + info2
+        if msg:
+            title = msg.pop(0)
+            info = ' '.join(msg)
 
-    r = Record(url=url, title=title, info=info or None)
+        if title is None or info is None:
+            stitle, sinfo = find_infos(url)
+            title = stitle if title is None else title
+            info = sinfo if info is None else info
+
+        r = Record(url=url, title=title, info=info or None)
 
     keyboard = [
-        InlineKeyboardButton("Confirm", callback_data=('add', r)),
+        InlineKeyboardButton(action_name, callback_data=(action, r)),
         InlineKeyboardButton("Cancel", callback_data='cancel'),
     ]
 
     reply_markup = InlineKeyboardMarkup.from_column(keyboard)
-    update.message.reply_text(preview_record(r), reply_markup=reply_markup,
-                              parse_mode=telegram.ParseMode.HTML, disable_web_page_preview=True)
+    msg = premsg + preview_record(r)
+    update.message.reply_text(msg, reply_markup=reply_markup,
+                              parse_mode=telegram.ParseMode.HTML,
+                              disable_web_page_preview=True)
     return None
 
 
 def preview_record(r):
     title = r.title[:80] if r.title is not None else None
     info = r.info[:125].replace('\n', ' ') if r.info is not None else None
-    return f'How does it look?\n<b>Title: {title}</b>\nurl: {r.url}\ninfo: <pre>{info}</pre>\nts: {r.human_ts}'
+    return f'<b>Title: {title}</b>\nurl: {r.url}\ninfo: <pre>{info}</pre>\nts: {r.human_ts}'
 
 
 def handle_callback(update: Update, context: CallbackContext) -> None:
