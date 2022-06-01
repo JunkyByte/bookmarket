@@ -17,6 +17,7 @@ from dataclasses import replace
 import requests
 from requests.exceptions import InvalidURL, MissingSchema, InvalidSchema
 from tinydb import Query
+user_id = None
 Q = Query()
 bm = Bookmarket('./data/db.json')
 session = requests.Session()
@@ -32,10 +33,16 @@ logger = logging.getLogger(__name__)
 
 
 def start(update: Update, context: CallbackContext) -> None:
+    if update.message.chat_id != user_id:
+        return
+
     update.message.reply_text('Hi! I am the bookmarket bot')
 
 
 def handle_msg(update: Update, context: CallbackContext) -> None:
+    if update.message.chat_id != user_id:
+        return
+
     msg = update['message']['text']
     if not len(msg):
         update.message.reply_text('Something went wrong')
@@ -60,6 +67,9 @@ def any_in(field, *patterns):
     return all(p.lower() in field.lower() for p in patterns)
 
 def search_time(update: Update, context: CallbackContext) -> None:
+    if update.message.chat_id != user_id:
+        return
+
     msg = ' '.join(update['message']['text'].split()[1:])
     try:
         rg = timestring.Range(msg)
@@ -76,6 +86,9 @@ def search_time(update: Update, context: CallbackContext) -> None:
 
 
 def search(update: Update, context: CallbackContext) -> None:
+    if update.message.chat_id != user_id:
+        return
+
     msg = set(update['message']['text'].split()[1:])
     msg = [m for m in msg if m != ' ']
 
@@ -91,6 +104,9 @@ def search(update: Update, context: CallbackContext) -> None:
 
 
 def search(update: Update, context: CallbackContext) -> None:
+    if update.message.chat_id != user_id:
+        return
+
     msg = set(update['message']['text'].split()[1:])
     msg = [m for m in msg if m != ' ']
 
@@ -106,6 +122,9 @@ def search(update: Update, context: CallbackContext) -> None:
 
 
 def add_or_delete(update: Update, context: CallbackContext) -> None:
+    if update.message.chat_id != user_id:
+        return
+
     msg = update['message']['text'].split()
     url = msg.pop(0)
     url = sanitize_url(url)
@@ -158,6 +177,9 @@ def preview_record(r):
 
 
 def handle_callback(update: Update, context: CallbackContext) -> None:
+    if update.message.chat_id != user_id:
+        return
+
     query = update.callback_query
     query.answer()
 
@@ -179,6 +201,9 @@ def handle_callback(update: Update, context: CallbackContext) -> None:
 
 
 def delete_callback(update: Update, context: CallbackContext) -> None:
+    if update.message.chat_id != user_id:
+        return
+
     query = update.callback_query
     try:
         bm.delete(query.data)
@@ -189,6 +214,9 @@ def delete_callback(update: Update, context: CallbackContext) -> None:
 
 
 def add_callback(update: Update, context: CallbackContext) -> None:
+    if update.message.chat_id != user_id:
+        return
+
     query = update.callback_query
     try:
         bm.write(query.data)
@@ -228,6 +256,9 @@ def msg_records(update, rs, show_desc=True):
 
 
 def show_preview(update: Update, context: CallbackContext) -> None:  # TODO
+    if update.message.chat_id != user_id:
+        return
+
     rs = bm.stime(start=time.time() - 60 * 60 * 24 * 14)
     return None if not rs else msg_records(update, rs)
 
@@ -277,6 +308,8 @@ def handle_invalid_button(update: Update, context: CallbackContext) -> None:
 
 
 def main() -> None:
+    global user_id
+
     # Check key file
     key_file = 'bookmarket/bot.key'
     if not os.path.isfile(key_file):
@@ -287,7 +320,8 @@ def main() -> None:
 
     # Start the bot
     with open(key_file, 'r') as f:
-        key = f.read().replace('\n', '')
+        key, user_id, *_ = f.read().split('\n')
+        user_id = int(user_id)
     updater = Updater(key, arbitrary_callback_data=True)
     updater.bot.set_my_commands([
         ('/p', 'preview last few added bookmarks'),  # TODO

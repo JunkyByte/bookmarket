@@ -36,7 +36,8 @@ git clone git@github.com:JunkyByte/bookmarket.git
 cd bookmarket
 python bookmarket/telegram_bot.py
 ```
-It will create a key file where you can paste your access token.
+It will create a key file where you can paste your access token and `chat_id`, the bot is intended to be personally hosted, to prevent other people to access it we check that the `chat_id` is equal to the one of the user.
+Paste your `chat_id` on the second line of the `bot.key` file.
 
 ----
 
