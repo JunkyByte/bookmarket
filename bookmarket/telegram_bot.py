@@ -177,9 +177,6 @@ def preview_record(r):
 
 
 def handle_callback(update: Update, context: CallbackContext) -> None:
-    if update.message.chat_id != user_id:
-        return
-
     query = update.callback_query
     query.answer()
 
@@ -201,9 +198,6 @@ def handle_callback(update: Update, context: CallbackContext) -> None:
 
 
 def delete_callback(update: Update, context: CallbackContext) -> None:
-    if update.message.chat_id != user_id:
-        return
-
     query = update.callback_query
     try:
         bm.delete(query.data)
@@ -214,9 +208,6 @@ def delete_callback(update: Update, context: CallbackContext) -> None:
 
 
 def add_callback(update: Update, context: CallbackContext) -> None:
-    if update.message.chat_id != user_id:
-        return
-
     query = update.callback_query
     try:
         bm.write(query.data)
