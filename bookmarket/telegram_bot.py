@@ -255,6 +255,9 @@ def show_preview(update: Update, context: CallbackContext) -> None:  # TODO
 
 
 def show_stats(update: Update, context: CallbackContext) -> None:
+    if update.message.chat_id != user_id:
+        return
+
     # Show total bookmarks, added today / week / month / year
     msg = '<b>Bookmarket stats</b> 📊\n'
     msg += f'Total bookmarks: <b>{len(bm)}</b>\n'
